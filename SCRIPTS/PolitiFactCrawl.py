@@ -25,7 +25,8 @@ verdicts = {
     "mostly-true": "Mostly true",
     "true": "True",
     "false": "False",
-    "pants-fire": "Pants on fire"
+    "pants-fire": "Pants on fire",
+    "full-flop": "False"
 }
 
 #============================================== Function ==============================================
