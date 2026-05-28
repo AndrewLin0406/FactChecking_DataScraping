@@ -143,7 +143,7 @@ python PolitifactCrawl.py --limit 50
 
 ---
 
-# Output Format
+## PolitiFact Output Format
 
 Example article structure:
 
@@ -170,6 +170,31 @@ Example article structure:
     }
 }
 ```
+## Snopes Dataset Format
+
+Example article structure:
+
+```json
+{
+    "title": "Thieves aren't using perfume to knock out victims, despite persistent rumors",
+    "article_url": "https://www.snopes.com/fact-check/thieves-perfume-shock-victims/",
+    "author": "Joey Esposito",
+    "date": "May 28, 2026",
+    "byline": "Versions of this longstanding urban legend have lurked on the web since the 1990s.",
+    "article_data": {
+        "claim": "Thieves operating in public places are using drug-filled perfume bottles to render their victims unconscious.",
+        "rating": "False",
+        "author": "Joey Esposito",
+        "datePublished": "2026-05-28T08:00:06Z",
+        "content": "Full article text...",
+        "sources": [
+            "CDC Health-Related Hoaxes & Rumors. https://webharvest.gov/...",
+            "Drugs@FDA: FDA-Approved Drugs. https://www.accessdata.fda.gov/...",
+            "\"Hydroxyzine (Oral Route).\" Mayo Clinic, https://www.mayoclinic.org/..."
+        ]
+    }
+}
+```
 
 ---
 
@@ -188,14 +213,3 @@ This collects only articles published after:
 ```text
 2025-01-01
 ```
-
----
-
-# Notes
-
-* Some websites may change their HTML structure over time.
-* Crawling large numbers of pages may take significant time.
-* A delay is included between requests to reduce server load.
-* PolitiFact multilingual articles are filtered to English-only articles.
-
-#
