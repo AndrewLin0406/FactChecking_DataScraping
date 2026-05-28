@@ -36,7 +36,7 @@ def parse_date(date):
         date
         .split("(")[0]
         .replace(".", "")
-        .replace("Sept", "Sep")
+        .replace("Sept.", "Sep")
         .strip()
     )
 
