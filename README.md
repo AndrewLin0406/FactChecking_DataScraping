@@ -94,11 +94,15 @@ PROJECT/
 
 ## Snopes
 
+Each page contains 20 articles.
+
 ```bash
 python SnopesCrawl.py
 ```
 
 Example with timestamp filtering:
+
+Each page contains 30 articles
 
 ```bash
 python SnopesCrawl.py --time-stamp 20250101
