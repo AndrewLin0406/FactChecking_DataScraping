@@ -19,13 +19,18 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
+# Both Flop-O-Meter and Truth-O-Meter
 verdicts = {
     "barely-true": "Mostly false",
     "half-true": "Half true",
     "mostly-true": "Mostly true",
     "true": "True",
     "false": "False",
-    "pants-fire": "Pants on fire"
+    "pants-fire": "Pants on fire",
+
+    "full-flop": "Full flop",
+    "half-flip": "Half flop",
+    "no-flop": "No flop"
 }
 
 #============================================== Function ==============================================
@@ -36,7 +41,7 @@ def parse_date(date):
         date
         .split("(")[0]
         .replace(".", "")
-        .replace("Sept", "Sep")
+        .replace("Sept.", "Sep")
         .strip()
     )
 
@@ -88,7 +93,7 @@ def getArticles(timestamp=None, limit=-1):
         response = requests.get(
             page_url,
             headers=HEADERS,
-            timeout=10
+            timeout=(5, 30)
         )
 
         response.raise_for_status()
@@ -258,7 +263,7 @@ def scrape_article(url):
     response = requests.get(
         url,
         headers=HEADERS,
-        timeout=10
+        timeout=(5, 30)
     )
 
     response.raise_for_status()
@@ -272,7 +277,7 @@ def scrape_article(url):
         "claim": None,
         "rating": None,
         "speaker": None,
-        "author": None,
+        "author": [],
         "content": "",
         "sources": []
     }
@@ -338,8 +343,6 @@ def scrape_article(url):
         class_="m-author__content"
     )
 
-    authors = []
-
     for block in author_blocks:
 
         author_link = block.find("a")
@@ -357,7 +360,8 @@ def scrape_article(url):
             if author_link else None
         )
 
-        article_data["author"] = author_name
+        if author_name:
+            article_data["author"].append(author_name)
 
     # ======================================
     # CONTENT
@@ -374,24 +378,44 @@ def scrape_article(url):
         class_="m-textblock"
     )
 
+    print(body)
+
     if body:
 
+        in_ruling = False
+
         # ==================================
-        # FULL ARTICLE CONTENT
+        # ARTICLE CONTENT + OUR RULING
         # ==================================
 
-        for p in body.find_all("p"):
+        for element in body.find_all(["p", "h2", "h3"]):
 
-            text = p.get_text(
-                " ",
-                strip=True
-            )
+            print("TAG:", getattr(element, "name", None))
 
-            if text:
+            if not hasattr(element, "name"):
+                continue
 
-                content["article_content"].append(
-                    text
-                )
+            if (
+                element.name in ["h2", "h3"]
+                and "our ruling" in element.get_text().lower()
+            ):
+                print("FOUND RULING")
+                in_ruling = True
+                continue
+
+            if element.name != "p":
+                continue
+
+            text = element.get_text(" ", strip=True)
+
+            print("PARAGRAPH:", text[:50])
+
+            if in_ruling:
+                print("APPEND RULING")
+                content["our_ruling"].append(text)
+            else:
+                print("APPEND CONTENT")
+                content["article_content"].append(text)
 
         # ==================================
         # IF YOUR TIME IS SHORT
@@ -416,41 +440,6 @@ def scrape_article(url):
                     content[
                         "if_your_time_is_short"
                     ].append(text)
-                    
-        # ==================================
-        # OUR RULING
-        # ==================================
-
-        ruling_header = body.find(
-            lambda tag:
-                tag.name in ["h2", "h3"]
-                and "our ruling"
-                in tag.get_text().lower()
-        )
-
-        if ruling_header:
-
-            current = ruling_header.find_next_sibling()
-
-            while current:
-
-                if current.name in ["h2", "h3"]:
-                    break
-
-                if current.name == "p":
-
-                    text = current.get_text(
-                        " ",
-                        strip=True
-                    )
-
-                    if text:
-
-                        content[
-                            "our_ruling"
-                        ].append(text)
-
-                current = current.find_next_sibling()
 
     article_data["content"] = content
 
@@ -476,15 +465,11 @@ def scrape_article(url):
                     " ",
                     strip=True
                 ),
-                "links": None
+                "links": []
             }
 
-            for a in p.find_all(
-                "a",
-                href=True
-            ):
-
-                source["links"] = a["href"]
+            for a in p.find_all("a", href=True):
+                source["links"].append(a["href"])
 
             sources.append(source)
 
@@ -500,6 +485,8 @@ def getData(outputDirectory, category, timeStamp, limit, dataset_name="politifac
 
     articles = getArticles(timeStamp, limit=limit)
     outputFile = outputDirectory / dataset_name
+
+    print("Finished Collecting The Articles.")
 
     filtered_articles = []
 
@@ -517,6 +504,8 @@ def getData(outputDirectory, category, timeStamp, limit, dataset_name="politifac
 
         filtered_articles.append(article)
     
+    print("Finished Scraping The Articles.")
+
     with open(outputFile, "w", encoding="utf-8") as f:
         json.dump(
             filtered_articles,

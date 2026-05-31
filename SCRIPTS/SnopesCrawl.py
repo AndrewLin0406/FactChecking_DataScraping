@@ -182,7 +182,6 @@ def getArticles(URL_category="fact-check", timestamp=None, limit=-1):
         page += 1
 
         if (limit != -1 and page > limit) or done:
-            print("Finished collecting articles")
             break
     
     return articles
@@ -264,6 +263,13 @@ def scrape_article(url):
             if text:
                 paragraphs.append(text)
 
+    if not paragraphs:
+        print(f"EMPTY ARTICLE: {url}")
+        return None
+
+    if "about this rating" in paragraphs[0].lower():
+        paragraphs.pop(0)
+
     article_data["content"] = "\n\n".join(paragraphs)
 
     # ==========================================
@@ -318,9 +324,13 @@ def getData(outputDirectory, category, timeStamp, limit, dataset_name="snopes_ar
     articles = getArticles(category, timeStamp, limit=limit)
     outputFile = outputDirectory / dataset_name
 
+    print("Finished Collecting The Articles")
+
     for article in articles:
         article_data = scrape_article(article["article_url"])
         article["article_data"] = article_data
+
+    print("Finished Scraping The Articles")
     
     with open(outputFile, "w", encoding="utf-8") as f:
         json.dump(articles, f, ensure_ascii=False, indent=4)
