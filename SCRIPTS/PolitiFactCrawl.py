@@ -504,7 +504,7 @@ def getData(outputDirectory, category, timeStamp, limit, dataset_name="politifac
 
         filtered_articles.append(article)
     
-    print("Finished Scraping The Articles.")
+    print(f"Finished Scraping The Articles. Scraped {len(filtered_articles)} Articles")
 
     with open(outputFile, "w", encoding="utf-8") as f:
         json.dump(

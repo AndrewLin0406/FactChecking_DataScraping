@@ -330,7 +330,7 @@ def getData(outputDirectory, category, timeStamp, limit, dataset_name="snopes_ar
         article_data = scrape_article(article["article_url"])
         article["article_data"] = article_data
 
-    print("Finished Scraping The Articles")
+    print(f"Finished Scraping The Articles, Sraped {len(articles)} Articles")
     
     with open(outputFile, "w", encoding="utf-8") as f:
         json.dump(articles, f, ensure_ascii=False, indent=4)
