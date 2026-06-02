@@ -363,7 +363,7 @@ def parse_args() -> argparse.Namespace:
         "--limit",
         type=int,
         default=300,
-        help="Maximum number of pages to crawl",
+        help="Maximum number of pages to crawl (-1 : no limit)",
     )
     return parser.parse_args()
 
