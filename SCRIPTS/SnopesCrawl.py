@@ -324,7 +324,7 @@ def getData(outputDirectory, category, timeStamp, limit, dataset_name="snopes_ar
     articles = getArticles(category, timeStamp, limit=limit)
     outputFile = outputDirectory / dataset_name
 
-    print("Finished Collecting The Articles")
+    print(f"Finished Collecting The Articles, Collected {len(articles)} Artcles")
 
     for article in articles:
         article_data = scrape_article(article["article_url"])

@@ -1,5 +1,14 @@
 """
 Article Crawl on PolitiFact website.
+How to run.
+    python3 PolitiFactCrawl.py
+
+    Parameters:
+        --limit      : the amount of total pages (default = 200, -1 -> no limit)
+        --time-stamp : the time filter, retrieving articles published the given time onwards
+        --category   : the given category in the web (latest)
+        --output-dir : the output directory
+        --output-name: the name of the output file with the file
 """
 
 import requests, json, argparse, time
@@ -29,8 +38,9 @@ verdicts = {
     "pants-fire": "Pants on fire",
 
     "full-flop": "Full flop",
-    "half-flip": "Half flop",
-    "no-flop": "No flop"
+    "half-flip": "Half flip",
+    "no-flop": "No flop",
+    "no-flip": "No flip"
 }
 
 #============================================== Function ==============================================
@@ -65,7 +75,7 @@ def parse_date(date):
         f"Unknown date format: {date}"
     )
 
-def getArticles(timestamp=None, limit=-1):
+def getArticles(category='latest', timestamp=None, limit=-1, start=1):
 
     done = False
 
@@ -80,15 +90,13 @@ def getArticles(timestamp=None, limit=-1):
             "%Y%m%d"
         )
 
-    page = 1
+    page = start
 
     while True:
 
         page_url = (
-            f"{URLs['latest']}?page={page}"
+            f"{URLs[category]}?page={page}"
         )
-
-        # print(f"Collecting page {page}")
 
         response = requests.get(
             page_url,
@@ -244,8 +252,6 @@ def getArticles(timestamp=None, limit=-1):
 
                 articles.append(article)
 
-                #print(claim)
-
             except Exception as e:
 
                 print("FAILED:", e)
@@ -378,8 +384,6 @@ def scrape_article(url):
         class_="m-textblock"
     )
 
-    print(body)
-
     if body:
 
         in_ruling = False
@@ -390,8 +394,6 @@ def scrape_article(url):
 
         for element in body.find_all(["p", "h2", "h3"]):
 
-            print("TAG:", getattr(element, "name", None))
-
             if not hasattr(element, "name"):
                 continue
 
@@ -399,7 +401,6 @@ def scrape_article(url):
                 element.name in ["h2", "h3"]
                 and "our ruling" in element.get_text().lower()
             ):
-                print("FOUND RULING")
                 in_ruling = True
                 continue
 
@@ -408,13 +409,9 @@ def scrape_article(url):
 
             text = element.get_text(" ", strip=True)
 
-            print("PARAGRAPH:", text[:50])
-
             if in_ruling:
-                print("APPEND RULING")
                 content["our_ruling"].append(text)
             else:
-                print("APPEND CONTENT")
                 content["article_content"].append(text)
 
         # ==================================
@@ -477,42 +474,44 @@ def scrape_article(url):
 
     return article_data
 
-def getData(outputDirectory, category, timeStamp, limit, dataset_name="politifact_articles.json"):
+def getData(outputDirectory, category, timeStamp, limit, dataset_name):
     outputDirectory.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    articles = getArticles(timeStamp, limit=limit)
-    outputFile = outputDirectory / dataset_name
+    # Page 882 is the last page as of Jun 3, 2026
+    for start in range(1, 802, 400):
+        articles = getArticles(category=category, timestamp=timeStamp, limit=limit, start=start)
+        outputFile = outputDirectory / f"politifact_articles_{start}.json"
 
-    print("Finished Collecting The Articles.")
+        print(f"Finished Collecting The Articles, Collected {len(articles)} Artcles")
 
-    filtered_articles = []
+        filtered_articles = []
 
-    for article in articles:
+        for article in articles:
 
-        article_data = scrape_article(
-            article["article_url"]
-        )
+            article_data = scrape_article(
+                article["article_url"]
+            )
 
-        # skip non-English articles
-        if article_data is None:
-            continue
+            # skip non-English articles
+            if article_data is None:
+                continue
 
-        article["article_data"] = article_data
+            article["article_data"] = article_data
 
-        filtered_articles.append(article)
-    
-    print(f"Finished Scraping The Articles. Scraped {len(filtered_articles)} Articles")
+            filtered_articles.append(article)
+        
+        print(f"Finished Scraping The Articles. Scraped {len(filtered_articles)} Articles")
 
-    with open(outputFile, "w", encoding="utf-8") as f:
-        json.dump(
-            filtered_articles,
-            f,
-            ensure_ascii=False,
-            indent=4
-        )
+        with open(outputFile, "w", encoding="utf-8") as f:
+            json.dump(
+                filtered_articles,
+                f,
+                ensure_ascii=False,
+                indent=4
+            )
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -524,6 +523,12 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=Path("DATASET"),
+        help="Root directory containing extracted datasets.",
+    )
+    parser.add_argument(
+        "--output-name",
+        type=str,
+        default="politifact_articles.json",
         help="Root directory containing extracted datasets.",
     )
     parser.add_argument(
@@ -553,8 +558,15 @@ def main() -> None:
     category_name = args.category
     time_stamp = args.time_stamp
     limit = args.limit
+    output_name = args.output_name
 
-    getData(output_root, category_name, time_stamp, limit)
+    getData(
+        outputDirectory=output_root, 
+        category=category_name, 
+        timeStamp=time_stamp, 
+        limit=limit, 
+        dataset_name=output_name
+        )
 
 if __name__ == "__main__":
     main()
